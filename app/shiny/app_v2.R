@@ -11,6 +11,7 @@ ui <- dashboardPage(
   
   dashboardSidebar(
     sidebarMenu(
+      id="tabs",
       menuItem("Dashboard description", tabName = "description", icon = icon("bookmark",lib = "glyphicon")),
       menuItem(" Data overview", tabName = "overview", icon = icon("chart-line")),
       menuItem("Add ", tabName = "add", icon = icon("plus")),
@@ -20,6 +21,7 @@ ui <- dashboardPage(
       menuItem("Predict", tabName = "predict", icon = icon("paper-plane"))
     )
   ),
+  
   
   dashboardBody(
     tags$head(
@@ -53,7 +55,7 @@ ui <- dashboardPage(
                            ;max-width:150000px
                            ;width: 825px;
               ")
-          #Section 1 
+          # Tab 1 - Section 1 
           ,div(strong("Data overview", style = "color:#595959;font-size:18px
                                                 ;padding-left:15px;width: 100em
                                                 ;border: 1px solid #333
@@ -64,7 +66,7 @@ ui <- dashboardPage(
           ,div(" In this first section the user can find data visualizations of some of the main measurements of the dataset in order to give insights about the data distribution."
                , style = "color:#595959;font-size:18px;padding-left:30px
                           ;position:relative; left:170px; top:-15px;width: 645px;")
-          #Section 2
+          #Tab 1 -Section 2
           ,div(strong("Add section", style = "color:#595959;font-size:18px
                                                 ;padding-left:15px;width: 100em
                                                 ;border: 1px solid #333
@@ -74,7 +76,7 @@ ui <- dashboardPage(
                                                 ;position:relative; left:5px; top:20px;"))
           ,div(" In this section, the user will be able to input a new observation by filling in the necessary measurements."
                , style = "color:#595959;font-size:18px;padding-left:30px;position:relative; left:170px; top:-20px;width: 650px;")
-          #Section 3
+          #Tab 1 -Section 3
           ,div(strong("Delete section", style = "color:#595959;font-size:18px
                                                 ;padding-left:15px;width: 15em
                                                 ;border: 1px solid #333
@@ -84,7 +86,7 @@ ui <- dashboardPage(
                                                 ;position:relative; left:5px; top:20px;"))
           ,div(" The purpose of this section is to allow the user to delete an observation by inputting an observation ID."
                , style = "color:#595959;font-size:18px;padding-left:30px;position:relative; left:170px; top:-15px;width: 650px;")
-          #Section 4
+          #Tab 1 -Section 4
           ,div(strong("Search section", style = "color:#595959;font-size:18px
                                                 ;padding-left:15px;width: 15em
                                                 ;border: 1px solid #333
@@ -94,7 +96,7 @@ ui <- dashboardPage(
                                                 ;position:relative; left:5px; top:20px;"))
           ,div("In this section the users will be able to query all the data of an observation by inputting the desired observation ID."
                , style = "color:#595959;font-size:18px;padding-left:30px;position:relative; left:170px; top:-20px;width: 650px;")
-          #Section 5
+          #Tab 1 -Section 5
           ,div(strong("Update section", style = "color:#595959;font-size:18px
                                                 ;padding-left:15px;width: 15em
                                                 ;border: 1px solid #333
@@ -104,7 +106,7 @@ ui <- dashboardPage(
                                                 ;position:relative; left:5px; top:20px;"))
           ,div("In this section the user will be able to modify an observation by inputting an observation ID. "
                , style = "color:#595959;font-size:18px;padding-left:30px;position:relative; left:170px; top:-15px;width:650px;")
-          #Section 6
+          #Tab 1 -Section 6
           ,div(strong("Prediction section", style = "color:#595959;font-size:18px
                                                ;padding-left:15px;width: 15em
                                                ;border: 1px solid #333
@@ -122,7 +124,44 @@ ui <- dashboardPage(
       
       # 2 tab content
       tabItem(tabName = "overview"
+              ,h5(textOutput("add_overview_message"),style = ("color:green; font-weight: bold;")) 
+              ,fluidRow(
+                box(
+                radioButtons("radio", label = h4("Select data to visualize"),
+                             choices = list("All data" = 1, "Cancer observations" = 2, "Non cancer observations" = 3), 
+                             selected = 1))
+              )
               
+              ,fluidRow(
+                column(6,
+                       box(
+                         title = "Number of observations with diabetes"
+                         ,status="danger", solidHeader = TRUE
+                         , height = 130
+                         ,div(strong(textOutput("diabetes_num"), style= "text-align: center
+                                                                          ;font-size:25px
+                                                                          ;color:#595959;"))
+                       ))
+                       
+    
+                ,column(6,
+                        box(
+                          title = "Number of observations without diabetes"
+                          ,status="success", solidHeader = TRUE
+                          , height = 130
+                          ,div(strong(textOutput("non_diabetes_num"), style= "text-align: center
+                                                                          ;font-size:25px
+                                                                          ;color:#595959;"))
+                        ))
+                )
+              ,fluidRow(
+                box(plotOutput("glucose_hist", height = 250)),
+                box(plotOutput("boxplot_preg", height = 250))
+              )
+              ,fluidRow(
+                box(plotOutput("insulin_hist", height = 250)),
+                box(plotOutput("boxplot_age", height = 250))
+              )
               
               
               
@@ -224,6 +263,169 @@ ui <- dashboardPage(
 )
 
 server <- function(input, output) {
+  
+  # ----------- GET INFO FOR DASHBOAD  -----------
+  
+  observeEvent(input$tabs, {
+    if (input$tabs == "overview" ){
+      
+      # Get dashboard filter 
+      radio_choice <- input$radio 
+      
+      # Get data 
+      diabetes_original <-read.csv("diabetes.csv")
+      ##   resp <- GET('web:8080/')
+      ##   diabetes_original<- fromJSON(content(resp, as='text'))
+      
+      # ALL values
+      if(radio_choice == 1){
+        diabetes_df <- diabetes_original
+      }
+      # cancer values
+      if(radio_choice == 2){
+        diabetes_df <-filter(diabetes_original,Outcome == "1")
+      }
+      # non cancer values 
+      if(radio_choice == 3){
+        diabetes_df <-filter(diabetes_original,Outcome == "0")
+      }
+      
+      # Get number of people with diabetes 
+      output$diabetes_num <- renderText(toString(filter(diabetes_df,Outcome == "1") %>% count()))
+      
+      # Get number of people with non-diabetes 
+      output$non_diabetes_num <- renderText(toString(filter(diabetes_df,Outcome == "0") %>% count()))
+      
+      # Histogram of glucose
+      output$glucose_hist <- renderPlot({
+        hist(diabetes_df$Glucose,
+             main = "Histogram of glucose"
+             ,xlab = "Glucose"
+             ,ylab = "Number of observations"
+             ,col = "lightgray"
+        )
+      })
+      
+      # Box plot of pregnancies
+      output$boxplot_preg <- renderPlot({
+        boxplot( diabetes_df$Pregnancies
+                 ,col = "lightgray"
+                 ,main = "Box plot of pregnancies"
+                 ,xlab = "Number of pregnancies"
+                 ,ylab = ""
+                 , horizontal=TRUE
+        )
+      })
+      
+      # Box plot of ages
+      output$boxplot_age <- renderPlot({
+        boxplot( diabetes_df$Age
+                 ,col = "lightgray"
+                 ,main = "Box plot of age"
+                 ,xlab = "Age in years"
+                 ,ylab = ""
+                 , horizontal=TRUE
+        )
+      })
+      
+     
+      # Histogram of insulin
+      output$insulin_hist <- renderPlot({
+        hist(diabetes_df$Insulin,
+             main = "Histogram of Insulin"
+             ,xlab = "Insulin"
+             ,ylab = "Number of observations"
+             ,col = "lightgray"
+        )
+      })
+   
+   
+      
+      
+       }
+
+  })
+  
+  # ----------- GET INFO FOR DASHBOAD IF THE RADIO BUTTON CHANGED  -----------
+  
+  observeEvent(input$radio, {
+      
+      # Get dashboard filter 
+      radio_choice <- input$radio 
+      
+      # Get data 
+      diabetes_original <-read.csv("diabetes.csv")
+      ##   resp <- GET('web:8080/')
+      ##   diabetes_original<- fromJSON(content(resp, as='text'))
+      
+      # ALL values
+      if(radio_choice == 1){
+        diabetes_df <- diabetes_original
+      }
+      # cancer values
+      if(radio_choice == 2){
+        diabetes_df <-filter(diabetes_original,Outcome == "1")
+      }
+      # non cancer values 
+      if(radio_choice == 3){
+        diabetes_df <-filter(diabetes_original,Outcome == "0")
+      }
+      
+      # Get number of people with diabetes 
+      output$diabetes_num <- renderText(toString(filter(diabetes_df,Outcome == "1") %>% count()))
+      
+      # Get number of people with non-diabetes 
+      output$non_diabetes_num <- renderText(toString(filter(diabetes_df,Outcome == "0") %>% count()))
+      
+      # Histogram of glucose
+      output$glucose_hist <- renderPlot({
+        hist(diabetes_df$Glucose,
+             main = "Histogram of glucose"
+             ,xlab = "Glucose"
+             ,ylab = "Number of observations"
+             ,col = "lightgray"
+        )
+      })
+      
+      # Box plot of pregnancies
+      output$boxplot_preg <- renderPlot({
+        boxplot( diabetes_df$Pregnancies
+                 ,col = "lightgray"
+                 ,main = "Box plot of pregnancies"
+                 ,xlab = "Number of pregnancies"
+                 ,ylab = ""
+                 , horizontal=TRUE
+        )
+      })
+      
+      # Box plot of ages
+      output$boxplot_age <- renderPlot({
+        boxplot( diabetes_df$Age
+                 ,col = "lightgray"
+                 ,main = "Box plot of age"
+                 ,xlab = "Age in years"
+                 ,ylab = ""
+                 , horizontal=TRUE
+        )
+      })
+      
+      
+      # Histogram of insulin
+      output$insulin_hist <- renderPlot({
+        hist(diabetes_df$Insulin,
+             main = "Histogram of Insulin"
+             ,xlab = "Insulin"
+             ,ylab = "Number of observations"
+             ,col = "lightgray"
+        )
+      })
+      
+      
+      
+      
+    
+    
+  })
   
   # ----------- ADD A VALUE  -----------
   observeEvent(input$add_button, {
