@@ -120,12 +120,10 @@ ui <- dashboardPage(
                                                ;padding: 8px 12px
                                                ;background-image: linear-gradient(180deg, #fff, #ddd 40%, #ccc)
                                                ;position:relative; left:5px; top:20px;"))
-          ,div("If the user wants to get a prediction of cancer, he/she should input in this section the diagnostic measurements."
+          ,div("If the user wants to get a prediction of diabaetes, he/she should input in this section the diagnostic measurements."
                , style = "color:#595959;font-size:18px;padding-left:30px;position:relative; left:170px; top:-10px;width: 650px;")
           
         )
-        
-        
       ),
       
       # 2 tab content
@@ -133,9 +131,9 @@ ui <- dashboardPage(
               #,h5(textOutput("add_overview_message"),style = ("color:green; font-weight: bold;")) 
               ,fluidRow(
                 box(
-                radioButtons("radio", label = h4("Select data to visualize"),
-                             choices = list("All data" = 1, "Cancer observations" = 2, "Non cancer observations" = 3), 
-                             selected = 1))
+                  radioButtons("radio", label = h4("Select data to visualize"),
+                               choices = list("All data" = 1, "Diabaetes observations" = 2, "Non diabaetes observations" = 3), 
+                               selected = 1))
               )
               
               ,fluidRow(
@@ -148,8 +146,8 @@ ui <- dashboardPage(
                                                                           ;font-size:25px
                                                                           ;color:#595959;"))
                        ))
-                       
-    
+                
+                
                 ,column(6,
                         box(
                           title = "Number of observations without diabetes"
@@ -159,7 +157,7 @@ ui <- dashboardPage(
                                                                           ;font-size:25px
                                                                           ;color:#595959;"))
                         ))
-                )
+              )
               ,fluidRow(
                 box(plotOutput("glucose_hist", height = 250)),
                 box(plotOutput("boxplot_preg", height = 250))
@@ -168,9 +166,6 @@ ui <- dashboardPage(
                 box(plotOutput("insulin_hist", height = 250)),
                 box(plotOutput("boxplot_age", height = 250))
               )
-              
-              
-              
       ), 
       
       # 3 tab content
@@ -189,7 +184,7 @@ ui <- dashboardPage(
                 ,textInput(inputId="add_bmi_txt", label = "BMI:", placeholder="Body mass index (weight in kg/(height in m)^2)")
                 ,textInput(inputId="add_pedegree_txt", label = "Diabetes Pedigree Function:", placeholder="Diabetes pedigree function")
                 ,textInput(inputId="add_age_txt", label = "age:", placeholder="age in years")
-                ,textInput(inputId="add_cancer_txt", label = "Cancer:", placeholder=" Input 1 if cancer, 0 if not  ")
+                ,textInput(inputId="add_cancer_txt", label = "Diabetes:", placeholder=" Input 1 if diabetes, 0 if not  ")
                 ,useShinyalert()  # Set up shinyalert
                 ,actionButton(inputId= "add_button",label="Submit new observation",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                 
@@ -235,13 +230,13 @@ ui <- dashboardPage(
                 ,textInput(inputId="update_id_txt", label = "ID:" , placeholder= "ID of the observation to update")
                 ,textInput(inputId="update_preg_txt", label = "pregnancies:" , placeholder= "Number of times pregnant")
                 ,textInput(inputId="update_glucose_txt", label = "glucose:", placeholder= "Plasma glucose concentration a 2 hours in an oral glucose tolerance test")
-                ,textInput(inputId="update_blood_txt ", label = "Blood Pressure:", placeholder="Diastolic blood pressure (mm Hg)")
-                ,textInput(inputId="update_skin_txt ", label = "Skin Thickness:", placeholder="Triceps skin fold thickness (mm)")
+                ,textInput(inputId="update_blood_txt", label = "Blood Pressure:", placeholder="Diastolic blood pressure (mm Hg)")
+                ,textInput(inputId="update_skin_txt", label = "Skin Thickness:", placeholder="Triceps skin fold thickness (mm)")
                 ,textInput(inputId="update_insulin_txt", label = "insulin:", placeholder="2-Hour serum insulin (mu U/ml)")
                 ,textInput(inputId="update_bmi_txt", label = "BMI:", placeholder="Body mass index (weight in kg/(height in m)^2)")
                 ,textInput(inputId="update_pedegree_txt", label = "Diabetes Pedigree Function:", placeholder="Diabetes pedigree function")
                 ,textInput(inputId="update_age_txt", label = "age:", placeholder="age in years")
-                ,textInput(inputId="update_cancer_txt", label = "Cancer:", placeholder=" Input 1 if cancer, 0 if not")
+                ,textInput(inputId="update_cancer_txt", label = "Diabaetes:", placeholder=" Input 1 if diabaetes, 0 if not")
                 ,useShinyalert()  # Set up shinyalert
                 ,actionButton(inputId="update_button",label="Update this observation",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
               )
@@ -266,7 +261,6 @@ ui <- dashboardPage(
                 ,actionButton(inputId= "predict_button",label="Predict this observation",style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                 
               )
-              
       )
       
     )
@@ -339,7 +333,7 @@ server <- function(input, output) {
         )
       })
       
-     
+      
       # Histogram of insulin
       output$insulin_hist <- renderPlot({
         hist(diabetes_df$insulin,
@@ -349,95 +343,84 @@ server <- function(input, output) {
              ,col = "lightgray"
         )
       })
-   
-   
-      
-      
-       }
-
+    }
   })
   
   # ----------- GET INFO FOR DASHBOAD IF THE RADIO BUTTON CHANGED  -----------
   
   observeEvent(input$radio, {
-      
-      # Get dashboard filter 
-      radio_choice <- input$radio 
-      
-      # Get data 
-      # diabetes_original <-read.csv("/app/data/diabetes.csv") # Fake data, to test with API  please comment this line
-      
-      # -- Using API method 
-      resp <- GET('web:8080/')
-      diabetes_original<- fromJSON(content(resp, as='text'))
-      
-      # ALL values
-      if(radio_choice == 1){
-        diabetes_df <- diabetes_original
-      }
-      # cancer values
-      if(radio_choice == 2){
-        diabetes_df <-filter(diabetes_original,outcome == "1")
-      }
-      # non cancer values 
-      if(radio_choice == 3){
-        diabetes_df <-filter(diabetes_original,outcome == "0")
-      }
-      
-      # Get number of people with diabetes 
-      output$diabetes_num <- renderText(toString(filter(diabetes_df,outcome == "1") %>% count()))
-      
-      # Get number of people with non-diabetes 
-      output$non_diabetes_num <- renderText(toString(filter(diabetes_df,outcome == "0") %>% count()))
-      
-      # Histogram of glucose
-      output$glucose_hist <- renderPlot({
-        hist(diabetes_df$glucose,
-             main = "Histogram of glucose"
-             ,xlab = "glucose"
-             ,ylab = "Number of observations"
-             ,col = "lightgray"
-        )
-      })
-      
-      # Box plot of pregnancies
-      output$boxplot_preg <- renderPlot({
-        boxplot( diabetes_df$pregnancies
-                 ,col = "lightgray"
-                 ,main = "Box plot of pregnancies"
-                 ,xlab = "Number of pregnancies"
-                 ,ylab = ""
-                 , horizontal=TRUE
-        )
-      })
-      
-      # Box plot of ages
-      output$boxplot_age <- renderPlot({
-        boxplot( diabetes_df$age
-                 ,col = "lightgray"
-                 ,main = "Box plot of age"
-                 ,xlab = "age in years"
-                 ,ylab = ""
-                 , horizontal=TRUE
-        )
-      })
-      
-      
-      # Histogram of insulin
-      output$insulin_hist <- renderPlot({
-        hist(diabetes_df$insulin,
-             main = "Histogram of insulin"
-             ,xlab = "insulin"
-             ,ylab = "Number of observations"
-             ,col = "lightgray"
-        )
-      })
-      
-      
-      
-      
+    
+    # Get dashboard filter 
+    radio_choice <- input$radio 
+    
+    # Get data 
+    # diabetes_original <-read.csv("/app/data/diabetes.csv") # Fake data, to test with API  please comment this line
+    
+    # -- Using API method 
+    resp <- GET('web:8080/')
+    diabetes_original<- fromJSON(content(resp, as='text'))
+    
+    # ALL values
+    if(radio_choice == 1){
+      diabetes_df <- diabetes_original
+    }
+    # cancer values
+    if(radio_choice == 2){
+      diabetes_df <-filter(diabetes_original,outcome == "1")
+    }
+    # non cancer values 
+    if(radio_choice == 3){
+      diabetes_df <-filter(diabetes_original,outcome == "0")
+    }
+    
+    # Get number of people with diabetes 
+    output$diabetes_num <- renderText(toString(filter(diabetes_df,outcome == "1") %>% count()))
+    
+    # Get number of people with non-diabetes 
+    output$non_diabetes_num <- renderText(toString(filter(diabetes_df,outcome == "0") %>% count()))
+    
+    # Histogram of glucose
+    output$glucose_hist <- renderPlot({
+      hist(diabetes_df$glucose,
+           main = "Histogram of glucose"
+           ,xlab = "glucose"
+           ,ylab = "Number of observations"
+           ,col = "lightgray"
+      )
+    })
+    
+    # Box plot of pregnancies
+    output$boxplot_preg <- renderPlot({
+      boxplot( diabetes_df$pregnancies
+               ,col = "lightgray"
+               ,main = "Box plot of pregnancies"
+               ,xlab = "Number of pregnancies"
+               ,ylab = ""
+               , horizontal=TRUE
+      )
+    })
+    
+    # Box plot of ages
+    output$boxplot_age <- renderPlot({
+      boxplot( diabetes_df$age
+               ,col = "lightgray"
+               ,main = "Box plot of age"
+               ,xlab = "age in years"
+               ,ylab = ""
+               , horizontal=TRUE
+      )
+    })
     
     
+    # Histogram of insulin
+    output$insulin_hist <- renderPlot({
+      hist(diabetes_df$insulin,
+           main = "Histogram of insulin"
+           ,xlab = "insulin"
+           ,ylab = "Number of observations"
+           ,col = "lightgray"
+      )
+    })
   })
   
   # ----------- ADD A VALUE  -----------
@@ -455,18 +438,18 @@ server <- function(input, output) {
     )
     output$add_validation_message <-renderText(toString(add_array))
     
-   # -- Using API method   
-   POST('web:8080/crud', 
-          body=toJSON(data.frame(
-            pregnancies = add_array[1]
-            ,glucose = add_array[2]
-            ,bloodpressure = add_array[3]
-            ,skinthickness = add_array[4]
-            ,insulin = add_array[5]
-            ,bmi = add_array[6]
-            ,diabetespedigreefunction = add_array[7]
-            ,age = add_array[8]
-            ,outcome = add_array[9])))
+    # -- Using API method   
+    POST('web:8080/crud', 
+         body=toJSON(data.frame(
+           pregnancies = add_array[1]
+           ,glucose = add_array[2]
+           ,bloodpressure = add_array[3]
+           ,skinthickness = add_array[4]
+           ,insulin = add_array[5]
+           ,bmi = add_array[6]
+           ,diabetespedigreefunction = add_array[7]
+           ,age = add_array[8]
+           ,outcome = add_array[9])))
     
     shinyalert(
       title = "A new observation has been added",
@@ -489,7 +472,7 @@ server <- function(input, output) {
   # ----------- DELETE A VALUE  -----------
   observeEvent(input$delete_button, {
     delete_array <- c(
-       as.numeric(input$delete_id_txt)  #0
+      as.numeric(input$delete_id_txt)  #0
     )
     output$delete_validation_message <-renderText(toString(delete_array))
     
@@ -512,8 +495,6 @@ server <- function(input, output) {
       imageUrl = "",
       animation = TRUE
     )
-    
-    
   })
   
   # ----------- SEARCH FOR A VALUE  -----------
@@ -525,20 +506,18 @@ server <- function(input, output) {
     
     # -- Using API method 
     resp_search <- GET(paste0('web:8080/crud?id=', search_array[1]))
-    # resp_search <- GET('web:8080/')
-    print(typeof(fromJSON(content(resp_search, as='text'))))
     
     ## Get tabla con el search 
     output$observation = renderDataTable({
       df <- data.frame(fromJSON(content(resp_search, as='text')))
-    
+      
     })
   })
   
   # ----------- UPDATE VALUES  -----------
   observeEvent(input$update_button, {
     update_array <- c(
-       as.numeric(input$update_id_txt)  #0
+      as.numeric(input$update_id_txt)  #0
       ,as.numeric(input$update_preg_txt ) #1
       ,as.numeric(input$update_glucose_txt) #2
       ,as.numeric(input$update_blood_txt ) #3
@@ -556,17 +535,17 @@ server <- function(input, output) {
     # -- Using API method 
     PATCH(paste0('web:8080/crud?id=', update_array[1]),
           body=toJSON(
-              data.frame(
-                pregnancies = update_array[2]
-                ,glucose = update_array[3]
-                ,bloodpressure = update_array[4]
-                ,skinthickness = update_array[5]
-                ,insulin = update_array[6]
-                ,bmi = update_array[7]
-                ,diabetespedigreefunction = update_array[8]
-                ,age = update_array[9]
-                ,outcome = update_array[10])
-              ))
+            data.frame(
+              pregnancies = update_array[2]
+              ,glucose = update_array[3]
+              ,bloodpressure = update_array[4]
+              ,skinthickness = update_array[5]
+              ,insulin = update_array[6]
+              ,bmi = update_array[7]
+              ,diabetespedigreefunction = update_array[8]
+              ,age = update_array[9]
+              ,outcome = update_array[10])
+          ))
     
     
     shinyalert(
@@ -590,7 +569,7 @@ server <- function(input, output) {
   # ----------- PREDICT A VALUE  -----------
   observeEvent(input$predict_button, {
     predict_array <- c(
-       as.numeric(input$predict_preg_txt ) #0
+      as.numeric(input$predict_preg_txt ) #0
       ,as.numeric(input$predict_glucose_txt) #1
       ,as.numeric(input$predict_blood_txt ) #2
       ,as.numeric(input$predict_skin_txt) #3
@@ -605,19 +584,21 @@ server <- function(input, output) {
     
     # -- Using API method 
     prediction_value <- POST('web:8080/predict', 
-                               body=toJSON(data.frame(
-                                  pregnancies = predict_array[1]
-                                  ,glucose =predict_array[2]
-                                  ,bloodpressure = predict_array[3]
-                                  ,skinthickness = predict_array[4]
-                                  ,insulin = predict_array[5]
-                                  ,bmi= predict_array[6]
-                                  ,diabetespedigreefunction = predict_array[7]
-                                  ,age = predict_array[8])))
+                             body=toJSON(data.frame(
+                               pregnancies = predict_array[1]
+                               ,glucose =predict_array[2]
+                               ,bloodpressure = predict_array[3]
+                               ,skinthickness = predict_array[4]
+                               ,insulin = predict_array[5]
+                               ,bmi= predict_array[6]
+                               ,diabetespedigreefunction = predict_array[7]
+                               ,age = predict_array[8])))
     
+    # processing to send a personalized message
     outcome <- fromJSON(content(prediction_value, as='text'))
     diabetes <- "It is unlikely that the patient has diabetes"
     if(outcome$outcome == 1){diabetes <- "It is highly likely that the patient has diabetes"}
+    
     
     shinyalert(
       title = "The prediction of your observation is :  ",
@@ -636,14 +617,6 @@ server <- function(input, output) {
       animation = TRUE
     )
   }) 
-  
-
-  
-
-  
-  
 }
 
 shinyApp(ui, server)
-
-
