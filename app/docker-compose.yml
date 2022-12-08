@@ -23,6 +23,6 @@ services:
   shiny: 
     build: ./shiny
     ports:
-      - 5000:4999
+      - 5000:5000
 volumes:
   pg_api:

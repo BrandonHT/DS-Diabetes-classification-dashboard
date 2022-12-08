@@ -24,10 +24,13 @@ RUN apt-get update && \
 #RUN Rscript -e 'renv::restore()'
 RUN R -e 'install.packages("tidyverse")'
 RUN R -e 'install.packages(c("httr", "jsonlite", "DT"))'
+RUN R -e 'install.packages("shinydashboard")'
+RUN R -e 'install.packages("shinyalert")'
+
 
 COPY . app/
 # expose port
-EXPOSE 4999
+EXPOSE 5000
 
 # run app on container start
-CMD ["R", "-e", "shiny::runApp('/app', host = '0.0.0.0', port = 4999)"]
+CMD ["R", "-e", "shiny::runApp('/app', host = '0.0.0.0', port = 5000)"]
