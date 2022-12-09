@@ -33,4 +33,4 @@ COPY . app/
 EXPOSE 5000
 
 # run app on container start
-CMD ["R", "-e", "shiny::runApp('/app', host = '0.0.0.0', port = 5000)"]
+CMD ["R", "-e", "shiny::runApp('/app', host = '0.0.0.0', port = 4999)"]
